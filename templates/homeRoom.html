@@ -41,6 +41,7 @@
     <button onclick="joinRoom()">Join Game Room</button>
 
     <script>
+        // ubah sesuai ipv4
         var socket = io.connect('http://' + '192.168.18.202'+ ':' + location.port);
 
         console.log("Socket", socket);
