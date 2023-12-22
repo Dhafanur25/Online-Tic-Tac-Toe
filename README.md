@@ -7,5 +7,5 @@ This web application implements Tic-Tac-Toe with RPC, multiple game rooms, and a
 1. Make sure all devices are on the same Wi-Fi network.
 2. Run `ipconfig` in the terminal.
 3. Take note of the IPv4 address.
-4. Update the address in the socket for `gameRoom.html` and `homeRoom.html`.
+4. Update the address in the socket for `gameRoom.html` and `homeRoom.html` with your IPv4 address.
 
