@@ -72,6 +72,7 @@
     <button id="homeBtn" onclick="home()">DashBoard</button>
        
     <script>
+        // ubah sesuai ipv4
         var socket = io.connect('http://' + '192.168.18.202' + ':' + location.port);
         var room_id = getRoomIdFromUrl();
         var playerSymbol = getSymbolFromUrl();
