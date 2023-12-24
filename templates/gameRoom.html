@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Style CSS untuk halaman -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-color: #010b59;
+        }
+        h1 {
+            color: #ffffff;
+        }
+        /* Style  cell pada board permainan */
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #ddd;
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .cell:hover {
+            background-color: #ccc;
+        }
+        /* Style untuk text giliran pemain mana*/
+        #current-turn {
+            margin: 10px 0;
+            font-size: 1.2em;
+            color: #ffffff;
+        }
+        #playAgainBtn, #homeBtn  {
+            display: none;
+            margin: 10px auto;
+        }
+        #game-board {
+            display: none;
+            grid-template-columns: repeat(3, 100px);
+            gap: 5px;
+            margin: 20px auto;
+            max-width: 300px;
+            width: 100%;
+            justify-content: center;
+        }
+        #homeBtn {
+            display: block;
+            margin: 10px auto;
+        }
+
+
+    </style>
+    <!-- Import library Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js"></script>
+
+    <title>Game Room {{ room_id }}</title>
+</head>
+<body>
+    <!-- Judul web dan informasi saat giliran ini -->
+    <h1 id="title">Game Room {{ room_id }}</h1>
+    <div id="current-turn">Waiting for other player!</div>
+
+     <!-- Game board dan cell nya -->
+    <div id="game-board">
+        <div class="cell" onclick="makeMove(0)" id="cell-0"></div>
+        <div class="cell" onclick="makeMove(1)" id="cell-1"></div>
+        <div class="cell" onclick="makeMove(2)" id="cell-2"></div>
+        <div class="cell" onclick="makeMove(3)" id="cell-3"></div>
+        <div class="cell" onclick="makeMove(4)" id="cell-4"></div>
+        <div class="cell" onclick="makeMove(5)" id="cell-5"></div>
+        <div class="cell" onclick="makeMove(6)" id="cell-6"></div>
+        <div class="cell" onclick="makeMove(7)" id="cell-7"></div>
+        <div class="cell" onclick="makeMove(8)" id="cell-8"></div>
+    </div>
+
+    <!-- Tombol untuk kembali ke dashboard -->
+    <button id="homeBtn" onclick="home()">DashBoard</button>
+       
+    <!-- Script JavaScript untuk berinteraksi dengan server melalui Socket.IO -->
+    <script>
+        // ubah sesuai ipv4
+        var socket = io.connect('http://' + '192.168.0.124' + ':' + location.port);
+        var room_id = getRoomIdFromUrl();
+        var playerSymbol = getSymbolFromUrl();
+        var stillPlay = true;
+
+        console.log("Socket", socket);
+
+        // Event listener sebelum tab ditutup
+        window.addEventListener('beforeunload', function () {
+            socket.emit('tab_close');
+        });
+
+        // Event listener ketika halaman diload
+        window.addEventListener('load', function () {
+            socket.emit('check', { room_id: room_id });
+        });
+
+        // Mendengarkan update board dari server
+        socket.on('update_board', function (data) {
+            if(data.room_id == room_id){
+                updateGameBoard(data.board);
+            }
+        });
+
+        // Mendengarkan update giliran dari server
+        socket.on('update_turn', function (data) {
+            if(data.room_id == room_id){
+                document.getElementById('current-turn').innerText = `Current Turn: ${data.next_player}`;
+            }
+        });
+
+        // Mendengarkan pengumuman menang atau draw dari server
+        socket.on('announce', function (data) {
+            if(data.room_id == room_id){
+                if(data.status == 'Winner announced'){
+                    document.getElementById('title').innerText = `Player ${data.winner} Wins!`;
+                }else{
+                    document.getElementById('title').innerText = `I'ts a Draw!`;
+                }
+                stillPlay = false;
+            }
+        });
+
+        // Mendengarkan update jumlah player di room saat ini
+        socket.on('check_player', function (data) {
+            checkUpdate(data);
+        });
+
+        // Fungsi untuk handle make move pada cell tertentu
+        function makeMove(cellIndex) {
+            var currentTurnText = document.getElementById('current-turn').innerText;
+            var currentPlayer = currentTurnText.split(': ')[1];
+            // Jika yang menekan cell sesuai dengan text giliran dan belum pengumuman pemenang
+            // Maka kirim data ke server untuk diolah dan menunggu update board
+            if (currentPlayer == playerSymbol && stillPlay){
+                socket.emit('make_move', {
+                    room_id: room_id,
+                    cell_index: cellIndex,
+                    current_player: currentPlayer
+                });
+            }
+
+        }
+        // Fungsi untuk memperiksa jumlah player di room saat ini
+        function checkUpdate(data) {
+            console.log("player:",data.player_count)
+            if (data.room_id == room_id) {
+                if (data.player_count == 2) { // Jika jumlah player sudah 2 maka tampilkan board dan text giliran
+                    stillPlay = true;
+                    document.getElementById('game-board').style.display = 'grid';
+                    document.getElementById('current-turn').innerText = `Current Turn: X`;
+                } else {// Jika jumlah player belum 2 maka sembunyikan board dan tampilkan text menunggu player lain
+                    resetBoard();
+                    document.getElementById('game-board').style.display = 'none';
+                    document.getElementById('current-turn').innerText = `Waiting for other player!`;
+                }
+                document.getElementById('title').innerText = `Game Room ${room_id}`;
+            }
+        }
+
+        // Fungsi update board sesuai dengan list board yang diberi dari server
+        function updateGameBoard(board) {
+            for (var i = 0; i < 3; i++) {
+                for (var j = 0; j < 3; j++) {
+                    var cellIndex = i * 3 + j;
+                    var cellValue = board[i][j];
+                    document.getElementById(`cell-${cellIndex}`).innerText = cellValue;
+                }
+            }
+            console.log("Game board updated successfully.");
+        }
+
+        // Fungsi untuk mendapatkan room_id dari URL
+        function getRoomIdFromUrl() {
+            var path = window.location.pathname;
+            var pathParts = path.split('/');
+            var index = pathParts.indexOf('gameRoom');
+
+            if (index !== -1 && index + 1 < pathParts.length) {
+                return pathParts[index + 1];
+            }
+            return null;
+        }
+
+        // Fungsi untuk mendapatkan simbol user dari URL
+        function getSymbolFromUrl() {
+            var queryString = window.location.search;
+            var queryParams = new URLSearchParams(queryString);
+            var playerInfo = queryString.substring(1);
+        
+            return playerInfo;
+        }
+
+        // Fungsi untuk mengirim pesan ke server untuk reset boardnya
+        function resetBoard(){
+            socket.emit('board_clear', { room_id: room_id }, function(data){
+                if (data.room_id == room_id){
+                    updateGameBoard(data.board);
+                }
+            });
+        }
+        // Fungsi untuk alihkan player kembali ke dashboard dan hapus player tersebut dari dict
+        function home() {
+            socket.emit('pop_player', { room_id: room_id, player: playerSymbol }, function () {
+                resetBoard(); 
+                window.location.href = '/';
+            });
+        }
+    </script>
+
+</body>
+</html>
