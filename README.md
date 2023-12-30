@@ -9,3 +9,8 @@ This web application implements Tic-Tac-Toe with RPC, multiple game rooms, and a
 3. Take note of the IPv4 address.
 4. Update the address in the socket for `gameRoom.html` and `homeRoom.html` with your IPv4 address.
 
+## Note:
+
+1. Make sure to have download flask socket-io using 'pip install Flask Flask-SocketIO' in the terminal.
+2. If it's not working try changing the port to a higher value.
+
