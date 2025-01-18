@@ -13,7 +13,7 @@ This web application implements Tic-Tac-Toe with RPC, multiple game rooms, and a
 
 1. Make sure to have downloaded flask socket-io using
    ```bash
-   'pip install Flask Flask-SocketIO'
+   pip install Flask Flask-SocketIO
    
 2. If it's not working try changing the port to a higher value.
 
